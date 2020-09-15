@@ -22,9 +22,16 @@ type Option struct {
 	Chapter string `json:"arc"`
 }
 
+type Handler struct {
+	s Story
+	t *template.Template
+}
+
+type HandlerOption func(h *Handler)
+
 var (
-	tmpl         *template.Template
-	htmlTemplate = `
+	defaultTemplate *template.Template
+	htmlTemplate    = `
 		<!DOCTYPE html>
 		<html>
 		<head>
@@ -93,10 +100,16 @@ var (
 )
 
 func init() {
-	tmpl = template.Must(template.New("").Parse(htmlTemplate))
+	defaultTemplate = template.Must(template.New("").Parse(htmlTemplate))
 }
 
-func NewHandler(s Story) http.HandlerFunc {
+func WithTemplate(tmpl *template.Template) HandlerOption {
+	return func(h *Handler) {
+		h.t = tmpl
+	}
+}
+
+func NewHandler(s Story, opts ...HandlerOption) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimSpace(r.URL.Path)
 		if path == "/" || path == "" {
@@ -106,7 +119,12 @@ func NewHandler(s Story) http.HandlerFunc {
 		path = path[1:]
 
 		if chapter, ok := s[path]; ok {
-			err := tmpl.Execute(w, chapter)
+			handler := Handler{s, defaultTemplate}
+			for _, opt := range opts {
+				opt(&handler)
+			}
+
+			err := handler.t.Execute(w, chapter)
 			if err != nil {
 				log.Printf("%v", err)
 				http.Error(w, "Something went wrong...", http.StatusInternalServerError)
