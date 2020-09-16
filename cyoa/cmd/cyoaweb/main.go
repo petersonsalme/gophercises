@@ -20,7 +20,7 @@ func main() {
 		panic(err)
 	}
 
-	story, err := cyoa.JsonStory(file)
+	story, err := cyoa.JSONStory(file)
 	if err != nil {
 		panic(err)
 	}

@@ -9,25 +9,26 @@ import (
 	"strings"
 )
 
-type Story map[string]Chapter
+type Story map[string]chapter
 
-type Chapter struct {
+type chapter struct {
 	Title      string   `json:"title"`
 	Paragraphs []string `json:"story"`
-	Options    []Option `json:"options"`
+	Options    []option `json:"options"`
 }
 
-type Option struct {
+type option struct {
 	Text    string `json:"text"`
 	Chapter string `json:"arc"`
 }
 
-type Handler struct {
+type handler struct {
 	s Story
 	t *template.Template
 }
 
-type HandlerOption func(h *Handler)
+// HandlerOption Used as Functional Option to make the HtmlTemplate configurable
+type HandlerOption func(h *handler)
 
 var (
 	defaultTemplate *template.Template
@@ -103,12 +104,14 @@ func init() {
 	defaultTemplate = template.Must(template.New("").Parse(htmlTemplate))
 }
 
+// WithTemplate Creates a Closure Function to set a HTML Template to a Handler
 func WithTemplate(tmpl *template.Template) HandlerOption {
-	return func(h *Handler) {
+	return func(h *handler) {
 		h.t = tmpl
 	}
 }
 
+// NewHandler Creates a http.HandlerFunc for Stories
 func NewHandler(s Story, opts ...HandlerOption) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimSpace(r.URL.Path)
@@ -119,7 +122,7 @@ func NewHandler(s Story, opts ...HandlerOption) http.HandlerFunc {
 		path = path[1:]
 
 		if chapter, ok := s[path]; ok {
-			handler := Handler{s, defaultTemplate}
+			handler := handler{s, defaultTemplate}
 			for _, opt := range opts {
 				opt(&handler)
 			}
@@ -135,7 +138,8 @@ func NewHandler(s Story, opts ...HandlerOption) http.HandlerFunc {
 	}
 }
 
-func JsonStory(reader io.Reader) (Story, error) {
+// JSONStory Decodes an JSON file into Story struct
+func JSONStory(reader io.Reader) (Story, error) {
 	decoder := json.NewDecoder(reader)
 
 	var story Story
