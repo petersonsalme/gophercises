@@ -2,6 +2,7 @@ package cyoa
 
 import (
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"io"
 	"log"
@@ -9,22 +10,27 @@ import (
 	"strings"
 )
 
-type Story map[string]chapter
+type Adventures []Adventure
 
-type chapter struct {
-	Title      string   `json:"title"`
-	Paragraphs []string `json:"story"`
-	Options    []option `json:"options"`
+type Adventure struct {
+	Arc   string `json:"arc"`
+	Story Story  `json:"story"`
 }
 
-type option struct {
-	Text    string `json:"text"`
-	Chapter string `json:"arc"`
+type Story struct {
+	Title      string   `json:"title"`
+	Paragraphs []string `json:"paragraphs"`
+	Options    []Option `json:"options"`
+}
+
+type Option struct {
+	Text string `json:"text"`
+	Arc  string `json:"arc"`
 }
 
 type handler struct {
-	s Story
-	t *template.Template
+	story    Story
+	template *template.Template
 }
 
 // HandlerOption Used as Functional Option to make the HtmlTemplate configurable
@@ -48,7 +54,7 @@ var (
 			{{if .Options}}
 				<ul>
 				{{range .Options}}
-				<li><a href="/{{.Chapter}}">{{.Text}}</a></li>
+				<li><a href="/{{.Arc}}">{{.Text}}</a></li>
 				{{end}}
 				</ul>
 			{{else}}
@@ -107,45 +113,61 @@ func init() {
 // WithTemplate Creates a Closure Function to set a HTML Template to a Handler
 func WithTemplate(tmpl *template.Template) HandlerOption {
 	return func(h *handler) {
-		h.t = tmpl
+		h.template = tmpl
 	}
 }
 
 // NewHandler Creates a http.HandlerFunc for Stories
-func NewHandler(s Story, opts ...HandlerOption) http.HandlerFunc {
+func NewHandler(adventures Adventures, opts ...HandlerOption) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		path := strings.TrimSpace(r.URL.Path)
-		if path == "/" || path == "" {
-			path = "/intro"
-		}
+		arcName := transformPathIntoArcName(r.URL.Path)
 
-		path = path[1:]
-
-		if chapter, ok := s[path]; ok {
-			handler := handler{s, defaultTemplate}
+		if adventure := searchAdventureByArcName(adventures, arcName); adventure != nil {
+			handler := handler{adventure.Story, defaultTemplate}
 			for _, opt := range opts {
 				opt(&handler)
 			}
 
-			err := handler.t.Execute(w, chapter)
+			err := handler.template.Execute(w, adventure.Story)
 			if err != nil {
 				log.Printf("%v", err)
 				http.Error(w, "Something went wrong...", http.StatusInternalServerError)
 			}
 			return
 		}
-		http.Error(w, "Chapter not found...", http.StatusNotFound)
+
+		errMsg := fmt.Sprintf("Adventure [%v] not found.", arcName)
+		http.Error(w, errMsg, http.StatusNotFound)
 	}
 }
 
-// JSONStory Decodes an JSON file into Story struct
-func JSONStory(reader io.Reader) (Story, error) {
+func transformPathIntoArcName(path string) (arcName string) {
+	arcName = strings.TrimSpace(path)
+	if arcName == "/" || arcName == "" {
+		arcName = "/intro"
+	}
+
+	return arcName[1:]
+}
+
+func searchAdventureByArcName(adventures Adventures, arcName string) *Adventure {
+	for _, a := range adventures {
+		if a.Arc == arcName {
+			return &a
+		}
+	}
+
+	return nil
+}
+
+// JSONAdventures Decodes an JSON file into Adventures struct
+func JSONAdventures(reader io.Reader) (Adventures, error) {
 	decoder := json.NewDecoder(reader)
 
-	var story Story
-	if err := decoder.Decode(&story); err != nil {
+	var a Adventures
+	if err := decoder.Decode(&a); err != nil {
 		return nil, err
 	}
 
-	return story, nil
+	return a, nil
 }

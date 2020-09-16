@@ -20,14 +20,14 @@ func main() {
 		panic(err)
 	}
 
-	story, err := cyoa.JSONStory(file)
+	adventures, err := cyoa.JSONAdventures(file)
 	if err != nil {
 		panic(err)
 	}
 
-	storyHandler := cyoa.NewHandler(story)
+	adventuresHandler := cyoa.NewHandler(adventures)
 
 	appPort := fmt.Sprintf(":%d", *port)
 	fmt.Printf("Starting application at port %s\n", appPort)
-	log.Fatal(http.ListenAndServe(appPort, storyHandler))
+	log.Fatal(http.ListenAndServe(appPort, adventuresHandler))
 }

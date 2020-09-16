@@ -3,25 +3,29 @@
 Gets a JSON file, throught flag configuration and shows its information as an interactive story.
 
 ### JSON Structure
-``` json
-{
-    # Arc Name
-    "intro": {
-        "title": string,
-        "story": [ string ],
-        "options": [
-        {
-            "text": string,
-            "arc": string
-        },
-        {
-            "text": string,
-            "arc": string
-        }
-        ]
-    }
-}
 
+``` json
+[
+    {
+        "arc": "intro",
+        "story": {
+            "title": "The Title",
+            "paragraphs": [
+                "Once upon a time...",
+            ],
+            "options": [
+                {
+                    "text": "Let's head to New York.",
+                    "arc": "new-york"
+                },
+                {
+                    "text": "Let's play it safe and try our luck in Denver.",
+                    "arc": "denver"
+                }
+            ]
+        } 
+    }
+]
 ```
 
 ### Functional Options
