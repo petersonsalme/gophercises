@@ -5,3 +5,4 @@
 * Exercise 03: [Create Your Own Adventure](./cyoa)
 * Exercise 04: [HTML Link Parser](./html-link-parser)
 * Exercise 05: [Sitemap Builder](./sitemap)
+* Exercise 06: [Hacker Rank Challenges](./hacker-rank)
