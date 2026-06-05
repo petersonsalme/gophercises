@@ -1,3 +1,3 @@
 module github.com/petersonsalme/gophercises/hacker-rank/camel-case
 
-go 1.15
+go 1.25.0
